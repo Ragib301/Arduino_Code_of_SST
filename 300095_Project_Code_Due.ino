@@ -5,7 +5,8 @@
 
   © Ragib Yasar Rahman
 
-  Backup: https://pastebin.com/NDz70heX
+  Pastebin: https://pastebin.com/NDz70heX  Passcode: 163415#
+  Github:   https://github.com/Ragib301/Arduino_Code_of_SST
 */
 
 #include <TinyGPS++.h>
@@ -31,7 +32,7 @@ String Emergency_Messeage;
 
 #define gpsSerial Serial2  // Neo-6M GPS Port
 TinyGPSPlus gps;
-float lati, longi;
+double lati, longi;
 String googlemapURL = "https://www.google.com/maps/@";
 
 #define TRIGGER_PIN A3
@@ -76,15 +77,15 @@ Twi *pTwi = WIRE_INTERFACE;
 static void Wire_Init(void) {
   pmc_enable_periph_clk(WIRE_INTERFACE_ID);
   PIO_Configure(
-  g_APinDescription[PIN_WIRE_SDA].pPort,
-  g_APinDescription[PIN_WIRE_SDA].ulPinType,
-  g_APinDescription[PIN_WIRE_SDA].ulPin,
-  g_APinDescription[PIN_WIRE_SDA].ulPinConfiguration);
+    g_APinDescription[PIN_WIRE_SDA].pPort,
+    g_APinDescription[PIN_WIRE_SDA].ulPinType,
+    g_APinDescription[PIN_WIRE_SDA].ulPin,
+    g_APinDescription[PIN_WIRE_SDA].ulPinConfiguration);
   PIO_Configure(
-  g_APinDescription[PIN_WIRE_SCL].pPort,
-  g_APinDescription[PIN_WIRE_SCL].ulPinType,
-  g_APinDescription[PIN_WIRE_SCL].ulPin,
-  g_APinDescription[PIN_WIRE_SCL].ulPinConfiguration);
+    g_APinDescription[PIN_WIRE_SCL].pPort,
+    g_APinDescription[PIN_WIRE_SCL].ulPinType,
+    g_APinDescription[PIN_WIRE_SCL].ulPin,
+    g_APinDescription[PIN_WIRE_SCL].ulPinConfiguration);
   NVIC_DisableIRQ(TWI1_IRQn);
   NVIC_ClearPendingIRQ(TWI1_IRQn);
   NVIC_SetPriority(TWI1_IRQn, 0);
@@ -92,17 +93,17 @@ static void Wire_Init(void) {
 }
 
 static void Wire1_Init(void) {
-    pmc_enable_periph_clk(WIRE1_INTERFACE_ID);
+  pmc_enable_periph_clk(WIRE1_INTERFACE_ID);
   PIO_Configure(
-      g_APinDescription[PIN_WIRE1_SDA].pPort,
-      g_APinDescription[PIN_WIRE1_SDA].ulPinType,
-      g_APinDescription[PIN_WIRE1_SDA].ulPin,
-      g_APinDescription[PIN_WIRE1_SDA].ulPinConfiguration);
+    g_APinDescription[PIN_WIRE1_SDA].pPort,
+    g_APinDescription[PIN_WIRE1_SDA].ulPinType,
+    g_APinDescription[PIN_WIRE1_SDA].ulPin,
+    g_APinDescription[PIN_WIRE1_SDA].ulPinConfiguration);
   PIO_Configure(
-      g_APinDescription[PIN_WIRE1_SCL].pPort,
-      g_APinDescription[PIN_WIRE1_SCL].ulPinType,
-      g_APinDescription[PIN_WIRE1_SCL].ulPin,
-      g_APinDescription[PIN_WIRE1_SCL].ulPinConfiguration);
+    g_APinDescription[PIN_WIRE1_SCL].pPort,
+    g_APinDescription[PIN_WIRE1_SCL].ulPinType,
+    g_APinDescription[PIN_WIRE1_SCL].ulPin,
+    g_APinDescription[PIN_WIRE1_SCL].ulPinConfiguration);
   NVIC_DisableIRQ(TWI0_IRQn);
   NVIC_ClearPendingIRQ(TWI0_IRQn);
   NVIC_SetPriority(TWI0_IRQn, 0);
@@ -146,12 +147,12 @@ void setup() {
 void loop() {
   mpu6050.update();
 
-  lcd.setCursor(0,0);
+  lcd.setCursor(0, 0);
   lcd.print("|Safer Shielded|");
-  lcd.setCursor(0,1);
+  lcd.setCursor(0, 1);
   lcd.print("|Transportation|");
 
- /* All Functions' Loops */
+  /* All Functions' Loops */
   Car_Crash_Avoiding();
   GPS_System();
   corona_virus_system();
@@ -161,16 +162,16 @@ void loop() {
 }
 
 void Car_Crash_Avoiding() {
-  delay(50);
+  delay(30);
   if (readPing() <= 9) {
     stopme();
     lcd.clear();
-    lcd.setCursor(0,0);
+    lcd.setCursor(0, 0);
     lcd.print("Car will Crash!");
-    lcd.setCursor(0,1);
+    lcd.setCursor(0, 1);
     lcd.print(" Car Stopped!!!");
 
-    for(int i=0; i<4; i++){
+    for (int i = 0; i < 4; i++) {
       BuzzerTone();
     }
   }
@@ -179,41 +180,49 @@ void Car_Crash_Avoiding() {
 int readPing() {
   delay(70);
   int cm = sonar.ping_cm();
-  if (cm==0) {
-    cm=250;
+  if (cm == 0) {
+    cm = 250;
   } return cm;
 }
 
 void Android_Controller() {
-  if (BTSerial.available()) { 
-   command = BTSerial.read();
+  if (BTSerial.available()) {
+    command = BTSerial.read();
 
-   switch(command) {
+    switch (command) {
 
-    case 'F':         // Forward
-      forward();
-      break;
+      case 'F':         // Forward
+        forward();
+        break;
 
-    case 'B':         // Backward
-      backward();
-      break;
+      case 'B':         // Backward
+        backward();
+        break;
 
-    case 'L':         // Go Left
-      left();
-      break;
+      case 'L':         // Go Left
+        left();
+        break;
 
-    case 'R':         // Go Right
-      right();
-      break;
+      case 'R':         // Go Right
+        right();
+        break;
 
-    case 'S':         // Stop
-      stopme();
-      break;
+      case 'V':         // Buzzer HIGH
+        digitalWrite(Buzzer, HIGH);
+        break;
 
-    default:         // Garbage Data Stop
-      stopme();
+      case 'v':         // Buzzer LOW
+        digitalWrite(Buzzer, LOW);
+        break;
+
+      case 'S':         // Stop
+        stopme();
+        break;
+
+      default:         // Garbage Data Stop
+        stopme();
     }
-  } 
+  }
 }
 
 void forward() {
@@ -227,7 +236,7 @@ void backward() {
   digitalWrite(IN1, LOW);
   digitalWrite(IN2, HIGH);
   digitalWrite(IN3, LOW);
-  digitalWrite(IN4, HIGH);  
+  digitalWrite(IN4, HIGH);
 }
 
 void left() {
@@ -251,42 +260,42 @@ void stopme() {
   digitalWrite(IN4, LOW);
 }
 
-void GPS_System() {  
-  while (gpsSerial.available()) {gps.encode(gpsSerial.read());}
+void GPS_System() {
+  while (gpsSerial.available()) {
+    gps.encode(gpsSerial.read());
+  }
 
   if (gps.location.isValid()) {
     lati  = gps.location.lat();
     longi = gps.location.lng();
   }
-  else{
-  /*lati  = 23.770946;
-    longi = 90.361998;*/
-    lati  = 23.77901497396472;
-    longi = 90.37162295955909;
+  else {
+    lati  = 23.770946;
+    longi = 90.361998;
   }
 }
 
 void car_emergency_system() {
   X_axis = mpu6050.getAngleX();
   Y_axis = mpu6050.getAngleY();
-  const int val = 50;
+  const int val = 60;
 
   if (X_axis >= val || Y_axis >= val) {
-   delay(wait);
-   Emergency_Messeage = "Vehicle Accident Emergency Alert!";
-   send_SMS();
+    delay(wait);
+    Emergency_Messeage = "Vehicle Accident Emergency Alert!";
+    send_SMS();
   }
   else if (Y_axis <= -val) {
-   delay(wait);
-   emergencyDoor.write(100);
-   Emergency_Messeage = "Vehicle Accident Emergency Alert!";
-   send_SMS();
+    delay(wait);
+    emergencyDoor.write(100);
+    Emergency_Messeage = "Vehicle Accident Emergency Alert!";
+    send_SMS();
   }
   else if (X_axis <= -val) {
-   distance = 0;
-   delay(wait);
-   Emergency_Messeage = "Vehicle Accident Emergency Alert!";
-   send_SMS();
+    distance = 0;
+    delay(wait);
+    Emergency_Messeage = "Vehicle Accident Emergency Alert!";
+    send_SMS();
   }
 }
 
@@ -296,9 +305,9 @@ void Emergency_Button_Function() {
     stopme();
     delay(wait);
 
-    lcd.setCursor(0,0);
+    lcd.setCursor(0, 0);
     lcd.print("Any Passenger");
-    lcd.setCursor(0,1);
+    lcd.setCursor(0, 1);
     lcd.print("is in Danger!");
     delay(1600);
 
@@ -317,23 +326,23 @@ void corona_virus_system() {
 
 void checkTemp() {
   delay(wait);
-  lcd.setCursor(0,0);
+  lcd.setCursor(0, 0);
   lcd.print("BodyTemp: ");
   lcd.print(mlx_body_temp());
   lcd.println("*F  ");
   delay(1000);
 
   if (mlx_body_temp() >= 100) {
-    lcd.setCursor(0,1);
+    lcd.setCursor(0, 1);
     lcd.print("Temp. is High!");
     BuzzerTone();
 
-    Buzzer = 7;
+    Buzzer = 0;
     Emergency_Messeage = "Covid-19 Virus Patient Suspect Alert!";
     send_SMS();
   }
-  else{
-    lcd.setCursor(0,1);
+  else {
+    lcd.setCursor(0, 1);
     lcd.print("Temp. is Okay.");
     BuzzerTone();
     disinfectSpray();
@@ -352,12 +361,12 @@ int mlx_body_temp() {
   hB = readByte();
   TWI_SendSTOPCondition(pTwi);
   pec = readByte();
-  while (!TWI_TransferComplete(pTwi)) 
+  while (!TWI_TransferComplete(pTwi))
     ;
-  tempUK = (hB << 8) | lB; 
+  tempUK = (hB << 8) | lB;
   tempK = ((float)tempUK * 2) / 100 ;
-  int HumanTemp = tempK-273.15;
-  int TempF = ((HumanTemp*1.8)+32)+12;    // Celsius to Fahrenheit
+  int HumanTemp = tempK - 273.15;
+  int TempF = ((HumanTemp * 1.8) + 32) + 12; // Celsius to Fahrenheit
   return TempF;
 }
 
@@ -367,44 +376,46 @@ void disinfectSpray() {
   delay(2000);
   myservo.write(pos);
 
-  lcd.setCursor(0,0);
+  lcd.setCursor(0, 0);
   lcd.print("Disinfecting...");
 
   digitalWrite(SprayLed, HIGH);
   delay(5000);
 
   digitalWrite(SprayLed, LOW);
-  lcd.setCursor(0,1);
-  lcd.print("--COMPLETE!!--");
+  lcd.setCursor(0, 1);
+  lcd.print("<--COMPLETE!!-->");
   delay(1000);
 
   lcd.clear();
-  lcd.setCursor(0,0);
+  lcd.setCursor(0, 0);
   lcd.print("|Safer Shielded|");
-  lcd.setCursor(0,1);
+  lcd.setCursor(0, 1);
   lcd.print("|Transportation|");
 }
 
 void send_SMS() {
   stopme();
 
- /* Text content */
+  /* Text content */
   BTSerial.println(Emergency_Messeage);
   BTSerial.print("\n");
   BTSerial.println("Bus Location : ");
   BTSerial.print(googlemapURL);
-  BTSerial.print(lati, 14);
+  BTSerial.print(lati, 6);
   BTSerial.print(",");
-  BTSerial.println(longi, 14);
+  BTSerial.println(longi, 6);
   BTSerial.print("\n");
 
   lcd.clear();
-  lcd.setCursor(0,0);
+  lcd.setCursor(0, 0);
   lcd.print("Emergency SMS");
-  lcd.setCursor(0,1);
+  lcd.setCursor(0, 1);
   lcd.println("has sent. OKAY  ");
 
-  while(true) {BuzzerTone();}
+  while (true) {
+    BuzzerTone();
+  }
 }
 
 void BuzzerTone() {
@@ -416,7 +427,7 @@ void BuzzerTone() {
 
 /*
 
- "If you want your children to be intelligent, read them fairy tales. 
+  "If you want your children to be intelligent, read them fairy tales.
   If you want them to be more intelligent, read them more fairy tales."
 
                                                    ---Albert Einstein
@@ -426,8 +437,8 @@ void BuzzerTone() {
     ____ __\ \_______/ /____ __
    /_||   ||`-._____.-`||   ||-\
   / _||===||    ! !    ||===|| _\
- |- _||===||===========||===||- _|
- \___||___||___________||___||___/
+  |- _||===||===========||===||- _|
+  \___||___||___________||___||___/
   \\|///   \_:_:_:_:_:_/   \\\|//
   |   _|    |_________|    |   _|
   |   _|   /( ======= )\   |   _|
@@ -435,8 +446,8 @@ void BuzzerTone() {
    (o )  /_ '._______.' _\  ( o)
   /__/ \ |    _|   |_   _| / \__\
   ///\_/ |_   _|   |    _| \_/\\\
- ///\\_\ \    _/   \    _/ /_//\\\
- \\|//_/ ///|\\\   ///|\\\ \_\\|//
+  ///\\_\ \    _/   \    _/ /_//\\\
+  \\|//_/ ///|\\\   ///|\\\ \_\\|//
          \\\|///   \\\|///
          /-  _\\   //   _\
          |   _||   ||-  _|
