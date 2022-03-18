@@ -1,6 +1,6 @@
 /* <<< ARDUINO CODE FOR - SST  >>>
 
-  Modified 23 December 2020
+  Modified 25 August 2021
   by Ragib Yasar Rahman
 
   © Ragib Yasar Rahman
@@ -18,7 +18,7 @@
 #include <LiquidCrystal_I2C.h>
 
 Servo myservo;
-const int pos = 90;
+#define pos 90
 Servo emergencyDoor;
 
 MPU6050 mpu6050(Wire);
@@ -32,23 +32,25 @@ String Emergency_Messeage;
 
 #define gpsSerial Serial2  // Neo-6M GPS Port
 TinyGPSPlus gps;
-double lati, longi;
+float lati, longi;
 String googlemapURL = "https://www.google.com/maps/@";
 
-#define TRIGGER_PIN A3
-#define ECHO_PIN    A2
+#define TRIGGER_PIN A2
+#define ECHO_PIN    A3
 #define MAX_DISTANCE 300
 
 NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE);
 int distance;
 
 #define SprayLed 14
-int Buzzer = 15;
+#define Buzzer   15
 #define IRpin 3
 #define MQ_3 A0
 #define Emer_Button A1
 
-const int wait = 2000;
+#define wait 2500
+bool state = true;
+#define light LED_BUILTIN
 
 //Left motor pins
 #define IN1 8
@@ -124,9 +126,10 @@ void setup() {
 
   pinMode(IRpin, INPUT);
   pinMode(MQ_3, INPUT);
-  pinMode(Emer_Button, INPUT);
+  pinMode(Emer_Button, INPUT_PULLUP);
   pinMode(SprayLed, OUTPUT);
   pinMode(Buzzer, OUTPUT);
+  pinMode(light, OUTPUT);
 
   pinMode(IN1, OUTPUT);   //Right Motor
   pinMode(IN2, OUTPUT);
@@ -145,25 +148,24 @@ void setup() {
 }
 
 void loop() {
-  mpu6050.update();
-
   lcd.setCursor(0, 0);
   lcd.print("|Safer Shielded|");
   lcd.setCursor(0, 1);
   lcd.print("|Transportation|");
 
   /* All Functions' Loops */
+  mpu6050.update();
   Car_Crash_Avoiding();
   GPS_System();
-  corona_virus_system();
+  //corona_virus_system();
   car_emergency_system();
   Android_Controller();
   Emergency_Button_Function();
 }
 
 void Car_Crash_Avoiding() {
-  delay(30);
-  if (readPing() <= 9) {
+  distance = readPing();
+  if (distance <= 10) {
     stopme();
     lcd.clear();
     lcd.setCursor(0, 0);
@@ -171,24 +173,22 @@ void Car_Crash_Avoiding() {
     lcd.setCursor(0, 1);
     lcd.print(" Car Stopped!!!");
 
-    for (int i = 0; i < 4; i++) {
-      BuzzerTone();
-    }
+    for (int i = 0; i < 3; i++) BuzzerTone();
   }
 }
 
 int readPing() {
-  delay(70);
-  int cm = sonar.ping_cm();
+  delay(50);
+  int uS = sonar.ping_median();
+  int cm = uS / US_ROUNDTRIP_CM;
   if (cm == 0) {
     cm = 250;
   } return cm;
 }
 
 void Android_Controller() {
-  if (BTSerial.available()) {
+  while (BTSerial.available()) {
     command = BTSerial.read();
-
     switch (command) {
 
       case 'F':         // Forward
@@ -203,8 +203,24 @@ void Android_Controller() {
         left();
         break;
 
+      case 'G':
+        front_left();
+        break;
+
+      case 'H':
+        back_left();
+        break;
+
       case 'R':         // Go Right
         right();
+        break;
+
+      case 'I':
+        front_right();
+        break;
+
+      case 'J':
+        back_right();
         break;
 
       case 'V':         // Buzzer HIGH
@@ -215,8 +231,20 @@ void Android_Controller() {
         digitalWrite(Buzzer, LOW);
         break;
 
+      case 'W':
+        digitalWrite(SprayLed, HIGH);
+        break;
+
+      case 'w':
+        digitalWrite(SprayLed, LOW);
+        break;
+
       case 'S':         // Stop
         stopme();
+        break;
+
+      case 'X':
+        corona_virus_system();
         break;
 
       default:         // Garbage Data Stop
@@ -246,6 +274,20 @@ void left() {
   digitalWrite(IN4, HIGH);
 }
 
+void front_left() {
+  digitalWrite(IN1, HIGH);
+  digitalWrite(IN2, LOW);
+  digitalWrite(IN3, LOW);
+  digitalWrite(IN4, LOW);
+}
+
+void back_left() {
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, HIGH);
+  digitalWrite(IN3, LOW);
+  digitalWrite(IN4, LOW);
+}
+
 void right() {
   digitalWrite(IN1, LOW);
   digitalWrite(IN2, HIGH);
@@ -253,11 +295,26 @@ void right() {
   digitalWrite(IN4, LOW);
 }
 
+void front_right() {
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, LOW);
+  digitalWrite(IN3, HIGH);
+  digitalWrite(IN4, LOW);
+}
+
+void back_right() {
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, LOW);
+  digitalWrite(IN3, LOW);
+  digitalWrite(IN4, HIGH);
+}
+
 void stopme() {
   digitalWrite(IN1, LOW);
   digitalWrite(IN2, LOW);
   digitalWrite(IN3, LOW);
   digitalWrite(IN4, LOW);
+  digitalWrite(Buzzer, LOW);
 }
 
 void GPS_System() {
@@ -278,29 +335,54 @@ void GPS_System() {
 void car_emergency_system() {
   X_axis = mpu6050.getAngleX();
   Y_axis = mpu6050.getAngleY();
-  const int val = 60;
+  const int val = 40;
 
   if (X_axis >= val || Y_axis >= val) {
+    lcd.clear();
     delay(wait);
+
+    lcd.setCursor(0, 0);
+    lcd.print("Bus is Tilting!");
+    lcd.setCursor(0, 1);
+    lcd.print("Accident Alert!");
+    delay(1000);
+
     Emergency_Messeage = "Vehicle Accident Emergency Alert!";
     send_SMS();
   }
   else if (Y_axis <= -val) {
+    lcd.clear();
     delay(wait);
+
     emergencyDoor.write(100);
+    lcd.setCursor(0, 0);
+    lcd.print("Bus is Tilting!");
+    lcd.setCursor(0, 1);
+    lcd.print("Accident Alert!");
+    delay(1000);
+
     Emergency_Messeage = "Vehicle Accident Emergency Alert!";
     send_SMS();
   }
   else if (X_axis <= -val) {
     distance = 0;
+    lcd.clear();
     delay(wait);
-    Emergency_Messeage = "Vehicle Accident Emergency Alert!";
+
+    lcd.setCursor(0, 0);
+    lcd.print("Bus is Tilting!");
+    lcd.setCursor(0, 1);
+    lcd.print("Accident Alert!");
+    delay(1000);
+
+    Emergency_Messeage = "Vehicle Tilting Accident Emergency Alert!";
     send_SMS();
   }
 }
 
 void Emergency_Button_Function() {
-  if (digitalRead(Emer_Button) == LOW) {
+  int r = button_read();
+  if (r > 0) {
     lcd.clear();
     stopme();
     delay(wait);
@@ -309,19 +391,39 @@ void Emergency_Button_Function() {
     lcd.print("Any Passenger");
     lcd.setCursor(0, 1);
     lcd.print("is in Danger!");
-    delay(1600);
+    delay(wait);
 
-    Emergency_Messeage = "Any Bus Passenger is in Danger!";
+    state = false;
+    if (r == 1) Emergency_Messeage = "Any system of the bus maybe malfuntions, Please take necessary actions!";
+    else if (r == 3) Emergency_Messeage = "Any Bus Passenger is in Danger!";
     send_SMS();
   }
 }
 
+int button_read() {
+  int count = 0;
+p:  int t = 0;
+  if (digitalRead(Emer_Button) == LOW) {
+    digitalWrite(light, HIGH);
+    while (digitalRead(Emer_Button) == LOW) {
+      delay(1); t++;
+    }
+    digitalWrite(light, LOW);
+    if (t > 3) {
+      t = 0; count++;
+      while (digitalRead(Emer_Button) == HIGH) {
+        delay(1); t++;
+        if (t > 1000) return count;
+      } goto p;
+    }
+  } return count;
+}
+
 void corona_virus_system() {
-  if (digitalRead(IRpin) == LOW) {
-    stopme();
-    lcd.clear();
-    checkTemp();
-  }
+  stopme();
+  delay(300);
+  lcd.clear();
+  checkTemp();
 }
 
 void checkTemp() {
@@ -337,9 +439,16 @@ void checkTemp() {
     lcd.print("Temp. is High!");
     BuzzerTone();
 
-    Buzzer = 0;
-    Emergency_Messeage = "Covid-19 Virus Patient Suspect Alert!";
-    send_SMS();
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print(" Please go to");
+    lcd.setCursor(0, 1);
+    lcd.print("   Hospital !");
+    delay(5000);
+    
+   /*state = false;
+    Emergency_Messeage = "Any passenger's temperature is high, Virus Suspect Alert!";
+    send_SMS(); */
   }
   else {
     lcd.setCursor(0, 1);
@@ -366,14 +475,14 @@ int mlx_body_temp() {
   tempUK = (hB << 8) | lB;
   tempK = ((float)tempUK * 2) / 100 ;
   int HumanTemp = tempK - 273.15;
-  int TempF = ((HumanTemp * 1.8) + 32) + 12; // Celsius to Fahrenheit
+  int TempF = ((HumanTemp * 1.8) + 32) - 5; // Celsius to Fahrenheit
   return TempF;
 }
 
 void disinfectSpray() {
   lcd.clear();
-  myservo.write(170);
-  delay(2000);
+  myservo.write(180);
+  delay(3100);
   myservo.write(pos);
 
   lcd.setCursor(0, 0);
@@ -385,13 +494,14 @@ void disinfectSpray() {
   digitalWrite(SprayLed, LOW);
   lcd.setCursor(0, 1);
   lcd.print("<--COMPLETE!!-->");
-  delay(1000);
+  delay(1100);
 
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("|Safer Shielded|");
   lcd.setCursor(0, 1);
   lcd.print("|Transportation|");
+  delay(100);
 }
 
 void send_SMS() {
@@ -406,6 +516,7 @@ void send_SMS() {
   BTSerial.print(",");
   BTSerial.println(longi, 6);
   BTSerial.print("\n");
+  BTSerial.print(char(26));
 
   lcd.clear();
   lcd.setCursor(0, 0);
@@ -419,10 +530,12 @@ void send_SMS() {
 }
 
 void BuzzerTone() {
-  digitalWrite(Buzzer, HIGH);
-  delay(900);
-  digitalWrite(Buzzer, LOW);
-  delay(400);
+  if (state) {
+    digitalWrite(Buzzer, HIGH);
+    delay(900);
+    digitalWrite(Buzzer, LOW);
+    delay(400);
+  }
 }
 
 /*
